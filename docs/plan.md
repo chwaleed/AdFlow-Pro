@@ -80,11 +80,11 @@ Goal: clients can create drafts, attach S3-hosted media (and/or external URLs), 
 - `POST /api/client/ads/:id/submit` → status transition Draft → Submitted; writes `AdStatusHistory` + `AuditLog`.
 - `GET /api/client/ads` and `GET /api/client/ads/:id` for own listings.
 
-### Milestone 2.5 — Client Dashboard UI
-- Tabs: Drafts · Under Review · Payment Pending · Published · Expired · Rejected.
-- Ad form (create/edit) with multi-step UX: details → media → package → review.
-- Status tracker timeline per ad showing every `AdStatusHistory` entry.
-- Profile + seller profile editing.
+### ✅ Milestone 2.5 — Client Dashboard UI
+- Tabs: All · Drafts · In Review · Payment · Published · Expired · Rejected (with live counts).
+- Ad form (create/edit): 4-step stepper — Details → Media (placeholder) → Package → Review.
+- `AdStatusBadge`, `AdCard` (status-aware actions), `StatusTimeline` components.
+- Profile page: basic info, seller profile, change password.
 
 ### Milestone 2.6 — Payment Submission
 - `POST /api/client/payments` (ad_id, amount, method, transaction_ref, sender_name, optional screenshot via S3 presign).

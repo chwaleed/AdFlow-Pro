@@ -36,7 +36,10 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
-          { path: 'dashboard', lazy: () => lazy(() => import('@/pages/client/DashboardPage')) },
+          { path: 'dashboard',       lazy: () => lazy(() => import('@/pages/client/DashboardPage')) },
+          { path: 'ads/new',         lazy: () => lazy(() => import('@/pages/client/CreateAdPage')) },
+          { path: 'ads/:id/edit',    lazy: () => lazy(() => import('@/pages/client/CreateAdPage')) },
+          { path: 'profile',         lazy: () => lazy(() => import('@/pages/client/ProfilePage')) },
         ],
       },
 
