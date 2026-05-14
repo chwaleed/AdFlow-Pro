@@ -1,0 +1,13 @@
+{
+  "name": "adflow",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"cd server && bun dev\" \"cd client && bun dev\"",
+    "dev:server": "cd server && bun dev",
+    "dev:client": "cd client && bun dev",
+    "install:all": "cd server && bun install && cd ../client && bun install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

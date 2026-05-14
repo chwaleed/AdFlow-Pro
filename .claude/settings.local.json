@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(bun create *)",
+      "Bash(bun install *)",
+      "Bash(bun add *)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(echo '{\"style\":\"default\",\"tailwind\":{\"config\":\"\",\"css\":\"src/index.css\",\"baseColor\":\"slate\",\"cssVariables\":true,\"prefix\":\"\"},\"rsc\":false,\"tsx\":true,\"aliases\":{\"components\":\"@/components\",\"utils\":\"@/lib/utils\",\"ui\":\"@/components/ui\",\"lib\":\"@/lib\",\"hooks\":\"@/hooks\"}}')"
+    ]
+  }
+}
