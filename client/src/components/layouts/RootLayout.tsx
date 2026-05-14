@@ -1,9 +1,15 @@
 import { Outlet } from 'react-router-dom'
+import Header from './Header'
+import Footer from './Footer'
 
 export default function RootLayout() {
   return (
-    <div className="min-h-dvh bg-background font-sans text-foreground antialiased">
-      <Outlet />
+    <div className="flex min-h-dvh flex-col bg-background font-sans text-foreground antialiased">
+      <Header />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <Footer />
     </div>
   )
 }

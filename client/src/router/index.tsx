@@ -1,3 +1,4 @@
+import React from 'react'
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore, type UserRole } from '@/stores/authStore'
 import RootLayout from '@/components/layouts/RootLayout'
@@ -12,23 +13,30 @@ function ProtectedRoute({ roles }: { roles?: UserRole[] }) {
   return <Outlet />
 }
 
+const lazy = (importFn: () => Promise<{ default: React.ComponentType }>) =>
+  importFn().then((m) => ({ Component: m.default }))
+
 const router = createBrowserRouter([
   {
     path: '/',
     element: <RootLayout />,
     children: [
-      { index: true, lazy: () => import('@/pages/LandingPage').then((m) => ({ Component: m.default })) },
-      { path: 'login', element: <LoginPage /> },
+      { index: true, lazy: () => lazy(() => import('@/pages/LandingPage')) },
+      { path: 'login',    element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
 
-      // Client + all roles
+      // Static pages
+      { path: 'faq',          lazy: () => lazy(() => import('@/pages/static/FaqPage')) },
+      { path: 'contact',      lazy: () => lazy(() => import('@/pages/static/ContactPage')) },
+      { path: 'terms',        lazy: () => lazy(() => import('@/pages/static/TermsPage')) },
+      { path: 'privacy',      lazy: () => lazy(() => import('@/pages/static/PrivacyPage')) },
+      { path: 'usage-policy', lazy: () => lazy(() => import('@/pages/static/UsagePolicyPage')) },
+
+      // Client + all authenticated roles
       {
         element: <ProtectedRoute />,
         children: [
-          {
-            path: 'dashboard',
-            lazy: () => import('@/pages/client/DashboardPage').then((m) => ({ Component: m.default })),
-          },
+          { path: 'dashboard', lazy: () => lazy(() => import('@/pages/client/DashboardPage')) },
         ],
       },
 
@@ -36,10 +44,7 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute roles={['moderator', 'admin', 'super_admin']} />,
         children: [
-          {
-            path: 'moderator',
-            lazy: () => import('@/pages/moderator/ReviewQueuePage').then((m) => ({ Component: m.default })),
-          },
+          { path: 'moderator', lazy: () => lazy(() => import('@/pages/moderator/ReviewQueuePage')) },
         ],
       },
 
@@ -47,10 +52,7 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute roles={['admin', 'super_admin']} />,
         children: [
-          {
-            path: 'admin',
-            lazy: () => import('@/pages/admin/AdminDashboardPage').then((m) => ({ Component: m.default })),
-          },
+          { path: 'admin', lazy: () => lazy(() => import('@/pages/admin/AdminDashboardPage')) },
         ],
       },
 

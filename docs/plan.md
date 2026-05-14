@@ -12,14 +12,14 @@
 
 Goal: a runnable client+server skeleton, all Mongoose schemas in place, JWT + RBAC working end-to-end, and the public shell of the site rendering.
 
-### Milestone 1.1 — Project Setup & Tooling
+### ✅ Milestone 1.1 — Project Setup & Tooling
 - Monorepo layout: `/server` (Express) and `/client` (React + Vite).
-- Server bootstrap: Express, Mongoose connection, dotenv, error middleware, request logger (morgan/pino).
-- Client bootstrap: React + Vite, React Router, Tailwind, Axios instance with interceptors.
-- Tooling: ESLint, Prettier, Husky pre-commit, `.env.example`, `nodemon` dev script.
+- Server bootstrap: Express, Mongoose, Bun native env, error middleware, morgan logger.
+- Client bootstrap: React 19 + Vite 8, React Router 7, Tailwind v4, Axios instance with interceptors.
+- Tooling: TypeScript full-stack, Bun runtime/package manager, `.env.example` both sides.
 - Base API contract: standard `{ ok, data, error }` response envelope.
 
-### Milestone 1.2 — Database Schemas (Mongoose)
+### ✅ Milestone 1.2 — Database Schemas (Mongoose)
 - `User` (email, password_hash, role: client/moderator/admin/super_admin, status).
 - `SellerProfile` (display_name, business_name, phone, city, is_verified).
 - `Package` (name, duration_days, weight, is_featured, price, refresh_rule).
@@ -34,18 +34,18 @@ Goal: a runnable client+server skeleton, all Mongoose schemas in place, JWT + RB
 - `SystemHealthLog` (source, response_ms, checked_at, status).
 - Indexes: `Ad.slug` unique, `Ad.status + expire_at`, `Payment.transaction_ref` unique sparse, text index on `Ad.title + description`.
 
-### Milestone 1.3 — Authentication & RBAC
+### ✅ Milestone 1.3 — Authentication & RBAC
 - `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`.
 - bcrypt password hashing, JWT access + refresh tokens.
 - `requireAuth` middleware and `requireRole(...roles)` guard.
-- Frontend: AuthContext, protected routes, login/register pages, role-aware redirects.
-- Seed script to create one super-admin and one moderator account.
+- Frontend: Zustand authStore, protected routes, login/register pages, role-aware redirects.
+- Seed script (`server/scripts/seed.ts`): 4 users (super_admin/moderator/admin/client), 3 packages, 8 categories, 6 cities, 10 learning questions.
 
-### Milestone 1.4 — Public Shell & Static Pages
-- Layout: header (nav + auth state), footer, mobile drawer.
-- Landing page skeleton (hero, packages strip placeholder, featured-ads slot, recent-ads slot, learning-question widget slot, trust badges).
-- Static pages: FAQ, Contact, Terms, Privacy, Usage Policy.
-- Design tokens (colors, spacing, typography) configured in Tailwind.
+### ✅ Milestone 1.4 — Public Shell & Static Pages
+- Layout: Header (nav + auth state + theme toggle + mobile Sheet drawer), Footer (4-col links).
+- Landing page: hero, categories grid, featured-ads slot (skeleton), how-it-works, packages strip, recent-ads slot (skeleton), trust section, CTA banner.
+- Static pages: FAQ (accordion), Contact, Terms, Privacy, Usage Policy.
+- Design tokens configured in Tailwind v4 (oklch CSS vars).
 
 **Phase 1 Acceptance:** Server boots, connects to Mongo, all models defined; a user can register, log in, see role-appropriate landing nav; static pages render; ESLint passes.
 
