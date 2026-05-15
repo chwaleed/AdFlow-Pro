@@ -148,7 +148,7 @@ function StepDetails({ form }: { form: ReturnType<typeof useForm<FormValues>> })
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
           <Label>Category <span className="text-destructive">*</span></Label>
-          <Select onValueChange={(v) => setValue('category', v)} value={watch('category')}>
+          <Select onValueChange={(v) => setValue('category', v ?? '')} value={watch('category') ?? undefined}>
             <SelectTrigger className="mt-1.5">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
@@ -162,7 +162,7 @@ function StepDetails({ form }: { form: ReturnType<typeof useForm<FormValues>> })
         </div>
         <div>
           <Label>City <span className="text-destructive">*</span></Label>
-          <Select onValueChange={(v) => setValue('city', v)} value={watch('city')}>
+          <Select onValueChange={(v) => setValue('city', v ?? '')} value={watch('city') ?? undefined}>
             <SelectTrigger className="mt-1.5">
               <SelectValue placeholder="Select city" />
             </SelectTrigger>
