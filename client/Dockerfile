@@ -1,9 +1,9 @@
-# ── Stage 1: Build React app ───────────────────────────────────────────────────
-FROM oven/bun:1-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN corepack enable
+COPY package.json ./
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
@@ -14,9 +14,8 @@ COPY . .
 ARG VITE_API_URL=http://localhost:5000
 ENV VITE_API_URL=${VITE_API_URL}
 
-RUN bun run build
+RUN pnpm run build
 
-# ── Stage 2: Serve with Nginx ──────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runner
 
 # Remove default nginx config

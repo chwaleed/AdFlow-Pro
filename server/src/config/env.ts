@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// Bun loads .env automatically — no dotenv needed
+// Environment variables are loaded by the runtime/process manager.
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(5000),
@@ -25,3 +25,4 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data
+

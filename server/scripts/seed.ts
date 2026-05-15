@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import mongoose from 'mongoose'
 import { User } from '../src/models/User.js'
 import { SellerProfile } from '../src/models/SellerProfile.js'
@@ -8,7 +9,7 @@ import { LearningQuestion } from '../src/models/LearningQuestion.js'
 
 const MONGO_URI = process.env.MONGODB_URI
 if (!MONGO_URI) {
-  console.error('MONGODB_URI not set. Run: bun --env-file ../.env scripts/seed.ts')
+  console.error('MONGODB_URI not set. Ensure server/.env exists and includes MONGODB_URI')
   process.exit(1)
 }
 

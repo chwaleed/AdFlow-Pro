@@ -14,9 +14,9 @@ Goal: a runnable client+server skeleton, all Mongoose schemas in place, JWT + RB
 
 ### ✅ Milestone 1.1 — Project Setup & Tooling
 - Monorepo layout: `/server` (Express) and `/client` (React + Vite).
-- Server bootstrap: Express, Mongoose, Bun native env, error middleware, morgan logger.
+- Server bootstrap: Express, Mongoose, environment validation, error middleware, morgan logger.
 - Client bootstrap: React 19 + Vite 8, React Router 7, Tailwind v4, Axios instance with interceptors.
-- Tooling: TypeScript full-stack, Bun runtime/package manager, `.env.example` both sides.
+- Tooling: TypeScript full-stack, pnpm package manager, `.env.example` both sides.
 - Base API contract: standard `{ ok, data, error }` response envelope.
 
 ### ✅ Milestone 1.2 — Database Schemas (Mongoose)

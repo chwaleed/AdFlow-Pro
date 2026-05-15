@@ -1,11 +1,12 @@
 {
   "name": "adflow",
   "private": true,
+  "packageManager": "pnpm@10.22.0",
   "scripts": {
-    "dev": "concurrently \"cd server && bun dev\" \"cd client && bun dev\"",
-    "dev:server": "cd server && bun dev",
-    "dev:client": "cd client && bun dev",
-    "install:all": "cd server && bun install && cd ../client && bun install"
+    "dev": "concurrently \"pnpm --dir server dev\" \"pnpm --dir client dev\"",
+    "dev:server": "pnpm --dir server dev",
+    "dev:client": "pnpm --dir client dev",
+    "install:all": "pnpm --dir server install && pnpm --dir client install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
