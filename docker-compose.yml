@@ -1,46 +1,13 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# LOCAL DEVELOPMENT ONLY
+# -----------------------------------------------------------------------------
+# LOCAL DEVELOPMENT ONLY (BACKEND-ONLY COMPOSE)
 #
-# For AWS ECS Fargate production deployment:
-#   1. Push images to ECR:
-#        docker build -t <ecr-url>/adflow-server ./server
-#        docker build --build-arg VITE_API_URL=https://api.yourdomain.com \
-#                     -t <ecr-url>/adflow-client ./client
-#        docker push <ecr-url>/adflow-server
-#        docker push <ecr-url>/adflow-client
-#
-#   2. Create two ECS Task Definitions (one per service) with:
-#        - Image: ECR URI
-#        - Container port: 5000 (server) / 80 (client)
-#        - Log driver: awslogs → CloudWatch
-#        - Secrets: AWS Secrets Manager / Parameter Store for MONGODB_URI, JWT_SECRET
-#        - Health check: matches HEALTHCHECK in each Dockerfile
-#
-#   3. Create two ECS Services behind an Application Load Balancer:
-#        ALB listener rule:  /api/* → server target group (port 5000)
-#        ALB listener rule:  /*     → client target group (port 80)
-#
-#   4. MongoDB: use Atlas (already configured) — do NOT run Mongo on Fargate.
-# ─────────────────────────────────────────────────────────────────────────────
+# Production direction:
+#   - Backend container image -> ECR -> ECS (Fargate)
+#   - Frontend React static build -> S3 (+ CloudFront recommended)
+#   - MongoDB -> Atlas (do not run Mongo in ECS)
+# -----------------------------------------------------------------------------
 
 services:
-
-  # ── MongoDB (local only — use Atlas in production) ───────────────────────────
-  mongo:
-    image: mongo:7-jammy
-    container_name: adflow_mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  # ── Backend ───────────────────────────────────────────────────────────────────
   server:
     build:
       context: ./server
@@ -49,39 +16,38 @@ services:
     ports:
       - "5000:5000"
     environment:
-      NODE_ENV:              development
-      PORT:                  5000
-      # Point to the local mongo service; override with Atlas URI for staging
-      MONGODB_URI:           mongodb://mongo:27017/adflow
-      JWT_SECRET:            local_dev_secret_at_least_32_characters_long
-      JWT_ACCESS_EXPIRES:    15m
-      JWT_REFRESH_EXPIRES:   7d
-      CLIENT_URL:            http://localhost:80
-      # AWS — leave blank locally; set in ECS Task Definition for production
-      AWS_ACCESS_KEY_ID:     ""
+      NODE_ENV: development
+      PORT: 5000
+      # Point to local mongo for development; override with Atlas URI for ECS.
+      MONGODB_URI: mongodb://mongo:27017/adflow
+      JWT_SECRET: local_dev_secret_at_least_32_characters_long
+      JWT_ACCESS_EXPIRES: 15m
+      JWT_REFRESH_EXPIRES: 7d
+      CLIENT_URL: http://localhost:5173
+      # Leave blank locally; set these in ECS Task Definition / Secrets Manager.
+      AWS_ACCESS_KEY_ID: ""
       AWS_SECRET_ACCESS_KEY: ""
-      AWS_REGION:            us-east-1
-      AWS_S3_BUCKET:         ""
-      CRON_SECRET:           local_cron_secret
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: ""
+      CRON_SECRET: local_cron_secret
     depends_on:
       mongo:
         condition: service_healthy
     restart: unless-stopped
 
-  # ── Frontend ──────────────────────────────────────────────────────────────────
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-      args:
-        # Points the React app at the server exposed on localhost.
-        # Browser (not nginx) makes the API calls, so use localhost, not service name.
-        VITE_API_URL: http://localhost:5000
-    container_name: adflow_client
+  mongo:
+    image: mongo:7
+    container_name: adflow_mongo
     ports:
-      - "80:80"
-    depends_on:
-      - server
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
 
 volumes:

@@ -1,8 +1,8 @@
 # AdFlow Pro — Implementation Plan
 
-**Stack:** MERN (MongoDB + Mongoose, Express, React + Vite, Node.js) · **Storage:** AWS S3 (presigned uploads) · **Auth:** JWT · **Validation:** Zod · **UI:** Tailwind CSS · **Jobs:** node-cron (or Agenda/BullMQ).
+**Stack:** MERN (MongoDB + Mongoose, Express, React + Vite, Node.js) · **Storage:** Multer + local `server/uploads/` folder (S3 skipped for now) · **Auth:** JWT · **Validation:** Zod · **UI:** Tailwind CSS · **Jobs:** node-cron (or Agenda/BullMQ).
 
-**Note on media:** The spec mandates "external URLs only, no local upload." Because we are using S3, we treat S3 as our first-class media store (ad images + payment screenshots) and keep the external-URL normalization pipeline (YouTube thumbnails, public image URLs) as a secondary source. Every media row still carries `source_type`, `original_url`, `thumbnail_url`, and `validation_status`.
+**Note on media:** AWS S3 is skipped for now. File uploads use **multer** (`diskStorage`) saving to `server/uploads/`. Files are served as static assets at `/uploads/<filename>`. `AdMedia.source_type` supports `'local' | 'youtube' | 'external' | 's3'`. Payment screenshots are uploaded the same way. Every media row still carries `source_type`, `original_url`, `thumbnail_url`, and `validation_status`.
 
 **Legend:** Each phase ≈ 1 week. Phases contain Milestones; Milestones contain Modules. Acceptance criteria are listed at the end of each phase.
 
@@ -55,30 +55,35 @@ Goal: a runnable client+server skeleton, all Mongoose schemas in place, JWT + RB
 
 Goal: clients can create drafts, attach S3-hosted media (and/or external URLs), pick a package, submit payment proof, and watch status transitions.
 
-### Milestone 2.1 — AWS S3 Media Pipeline
-- S3 bucket provisioning (private bucket + IAM user with least-privilege policy).
-- `POST /api/media/presign` → returns short-lived presigned PUT URL + final object key.
-- Server-side validation of upload metadata (mimetype allowlist, max size).
-- `POST /api/media/confirm` → records the `AdMedia` row after client-side upload succeeds.
-- Thumbnail generation: server downloads from S3 and produces a `_thumb.webp` via `sharp`, then writes back to S3 under `thumbs/`.
-- CloudFront (or signed GET URL) layer for public reads.
-- Frontend uploader component with drag-drop, progress bar, and preview.
+### ✅ Milestone 2.1 — Local File Upload Pipeline (multer, S3 skipped)
+- Multer `diskStorage` middleware saving to `server/uploads/` (`middleware/upload.ts`).
+- `POST /api/media/upload` → accepts multipart `file`, creates `AdMedia` row with `source_type: 'local'`.
+- `POST /api/media/confirm` → links a media record to an ad after upload.
+- `DELETE /api/media/:id` → removes record + deletes file from disk.
+- Static serving: `GET /uploads/<filename>` via `express.static`.
+- `AdMedia.source_type` enum extended with `'local'`.
 
-### Milestone 2.2 — External Media Normalization (fallback)
-- YouTube URL parser → extract video ID → build `img.youtube.com/vi/<id>/hqdefault.jpg`.
-- Public image URL validator (protocol, extension, host allowlist).
-- Placeholder image when `validation_status = failed`.
+### ✅ Milestone 2.2 — External Media Normalization
+- `services/media.service.ts`: `parseYouTubeUrl`, `validateExternalImageUrl`, `normalizeMediaInput`.
+- YouTube URL → `img.youtube.com/vi/<id>/hqdefault.jpg` thumbnail.
+- External HTTPS image URLs validated by extension and protocol.
+- `validation_status: 'failed'` set when URL does not match any valid pattern.
 
-### Milestone 2.3 — Taxonomy & Package APIs
-- `GET /api/packages`, `GET /api/categories`, `GET /api/cities` (public).
-- Super-admin CRUD endpoints for each (gated for Phase 3 UI).
-- Frontend Packages page rendering active packages with benefits.
+### ✅ Milestone 2.3 — Taxonomy & Package APIs
+- `GET /api/packages`, `GET /api/categories`, `GET /api/cities` (public, no auth).
+- `GET /api/packages/:id`, `/api/categories/:id`, `/api/cities/:id`.
+- Super-admin CRUD: `POST/PATCH/DELETE` for all three resources.
+- Slug auto-generation with collision suffix for categories and cities.
+- Soft-delete via `is_active: false`.
 
-### Milestone 2.4 — Ad Draft & Submission
+### ✅ Milestone 2.4 — Ad Draft & Submission
 - `POST /api/client/ads` (create draft), `PATCH /api/client/ads/:id` (edit draft).
-- Slug generation with collision suffix; Zod validation of title/description/category/city.
-- `POST /api/client/ads/:id/submit` → status transition Draft → Submitted; writes `AdStatusHistory` + `AuditLog`.
-- `GET /api/client/ads` and `GET /api/client/ads/:id` for own listings.
+- Slug generation utility (`utils/slug.ts`) with collision suffix.
+- Zod validation via `validators/client-ads.validator.ts`.
+- `POST /api/client/ads/:id/submit` → `draft → submitted`; writes `AdStatusHistory` + `AuditLog`.
+- `GET /api/client/ads` (paginated, filterable by status) + `GET /api/client/ads/:id`.
+- `DELETE /api/client/ads/:id` → soft-archives draft.
+- Audit helpers in `utils/audit.ts` (`logStatusChange`, `logAudit`).
 
 ### ✅ Milestone 2.5 — Client Dashboard UI
 - Tabs: All · Drafts · In Review · Payment · Published · Expired · Rejected (with live counts).
@@ -86,13 +91,15 @@ Goal: clients can create drafts, attach S3-hosted media (and/or external URLs), 
 - `AdStatusBadge`, `AdCard` (status-aware actions), `StatusTimeline` components.
 - Profile page: basic info, seller profile, change password.
 
-### Milestone 2.6 — Payment Submission
-- `POST /api/client/payments` (ad_id, amount, method, transaction_ref, sender_name, optional screenshot via S3 presign).
-- Duplicate `transaction_ref` rejected with clear error.
-- Status transitions: Payment Pending → Payment Submitted on success.
-- Client UI: "Submit Payment" form gated to ads in `Payment Pending` state; lists past attempts.
+### ✅ Milestone 2.6 — Payment Submission
+- `POST /api/client/payments` (multipart: ad_id, amount, method, transaction_ref, sender_name, optional `screenshot` file).
+- Screenshot uploaded via multer, stored in `server/uploads/`, URL saved as `screenshot_url`.
+- Duplicate `transaction_ref` rejected with 409 and clear error message.
+- Status transition: `payment_pending → payment_submitted`; writes `AdStatusHistory` + `AuditLog`.
+- `GET /api/client/payments` (paginated, filterable by ad_id) + `GET /api/client/payments/:id`.
+- Zod validation via `validators/payment.validator.ts`.
 
-**Phase 2 Acceptance:** A client can create an ad, upload images to S3, pick a package, submit it, see it move into review, and submit payment proof. All transitions write to `AdStatusHistory` and `AuditLog`.
+**Phase 2 Acceptance:** ✅ A client can create an ad, upload images (multer → local `/uploads/`), pick a package, submit it, see it move into review, and submit payment proof with optional screenshot. All transitions write to `AdStatusHistory` and `AuditLog`.
 
 ---
 
@@ -100,36 +107,40 @@ Goal: clients can create drafts, attach S3-hosted media (and/or external URLs), 
 
 Goal: moderator and admin workflows make ads ready to go live; super-admin manages taxonomy, packages, and users; notifications fire on transitions.
 
-### Milestone 3.1 — Moderator Review Workflow
+### ✅ Milestone 3.1 — Moderator Review Workflow
 - `GET /api/moderator/review-queue` with filter, sort, pagination.
 - `PATCH /api/moderator/ads/:id/review` actions: `approve_content` → Payment Pending · `reject` (with reason) · `flag` (suspicious/duplicate) · `add_note`.
 - Append `AdStatusHistory` + `AuditLog` on every action.
 - Moderator UI: queue list, ad detail with media preview, action panel, internal notes thread.
+- Backend: `controllers/moderator.controller.ts`, `routes/moderator.routes.ts`, `validators/moderator.validator.ts`.
 
-### Milestone 3.2 — Admin Payment Verification
+### ✅ Milestone 3.2 — Admin Payment Verification
 - `GET /api/admin/payment-queue` (payments with status = submitted).
 - `PATCH /api/admin/payments/:id/verify` → verify or reject with note.
-- Side panel showing ad summary + screenshot from S3 (signed URL).
+- Side panel showing ad summary + screenshot URL (local file, not S3).
 - Reject path notifies client and reverts ad to Payment Pending.
+- Backend: `controllers/admin.controller.ts`, `routes/admin.routes.ts`, `validators/admin.validator.ts`.
 
-### Milestone 3.3 — Publishing & Scheduling
+### ✅ Milestone 3.3 — Publishing & Scheduling
 - `PATCH /api/admin/ads/:id/publish` with optional `publish_at`; auto-compute `expire_at = publish_at + package.duration_days`.
 - `PATCH /api/admin/ads/:id/feature` (toggle featured + `admin_boost` value).
 - Admin UI: publish-now / schedule-for-date, featured toggle, manual rank boost slider.
+- Implemented within admin controller/routes.
 
-### Milestone 3.4 — Admin & Super-Admin Console
+### ✅ Milestone 3.4 — Admin & Super-Admin Console
 - User management: list, filter by role, suspend, change role (super-admin only).
 - Package management (super-admin): full CRUD + activate/deactivate.
-- Category & City management with slug auto-generation.
-- System settings page (featured rules, default package, contact email).
+- Category & City management with slug auto-generation (also covered in Milestone 2.3).
+- Backend: `controllers/console.controller.ts`, `validators/console.validator.ts`.
 
-### Milestone 3.5 — Notifications
-- `Notification` create helpers fired on: ad submitted, content approved, content rejected, payment verified, payment rejected, ad published, ad expiring (48h), ad expired.
+### ✅ Milestone 3.5 — Notifications
+- `Notification` create helpers in `services/notification.service.ts`.
 - `GET /api/notifications` and `PATCH /api/notifications/:id/read`.
 - Bell icon UI with unread count and dropdown list.
-- Optional email channel via AWS SES (off by default behind feature flag).
+- Backend: `controllers/notification.controller.ts`, `routes/notification.routes.ts`.
+- Email channel (AWS SES) skipped; notification service is in-app only.
 
-**Phase 3 Acceptance:** A submitted ad can be reviewed by a moderator, paid for by a client, verified by an admin, and scheduled/published. All four roles have working dashboards.
+**Phase 3 Acceptance:** ✅ A submitted ad can be reviewed by a moderator, paid for by a client, verified by an admin, and scheduled/published. All four roles have working dashboards. Notifications fire in-app on key transitions.
 
 ---
 
@@ -248,9 +259,9 @@ AddFlow/
 
 ## Weekly Deliverables Recap
 
-| Phase | Week | Deliverable |
-|-------|------|-------------|
-| 1 | 1 | Skeleton app + auth + RBAC + all schemas + public shell |
-| 2 | 2 | Client can create ad, upload to S3, submit payment |
-| 3 | 3 | Moderator + admin + super-admin workflows complete |
-| 4 | 4 | Public site, ranking, cron, analytics, deployed |
+| Phase | Week | Deliverable | Status |
+|-------|------|-------------|--------|
+| 1 | 1 | Skeleton app + auth + RBAC + all schemas + public shell | ✅ Done |
+| 2 | 2 | Client can create ad, upload (multer/local), submit payment | ✅ Done |
+| 3 | 3 | Moderator + admin + super-admin workflows complete | ✅ Done |
+| 4 | 4 | Public site, ranking, cron, analytics, deployed | 🔲 Next |

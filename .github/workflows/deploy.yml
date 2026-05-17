@@ -1,244 +1,67 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Build & push Docker images to ECR on every push to main.
-# ECS deploy runs only when ECS_CLUSTER secret is set.
-#
-# Minimum GitHub Secrets required (Settings → Secrets → Actions):
-#
-#   AWS_ACCESS_KEY_ID       IAM key  (needs ECR push + ECS deploy permissions)
-#   AWS_SECRET_ACCESS_KEY   IAM secret
-#   VITE_API_URL            Production API URL baked into the React bundle
-#                           e.g. https://api.yourdomain.com
-#
-# Optional — add these only when your ECS cluster is ready:
-#
-#   ECS_CLUSTER             e.g. addflow-cluster
-#   ECS_TASK_DEF_SERVER     task definition family name, e.g. addflow-server
-#   ECS_TASK_DEF_CLIENT     e.g. addflow-client
-#   ECS_SERVICE_SERVER      e.g. addflow-server-svc
-#   ECS_SERVICE_CLIENT      e.g. addflow-client-svc
-#   ECS_CONTAINER_SERVER    container name in task def, e.g. server
-#   ECS_CONTAINER_CLIENT    e.g. client
-# ─────────────────────────────────────────────────────────────────────────────
+# name: Deploy MERN App
+# on:
+#   push:
+#     branches: ["main"]
 
-name: Build & Deploy
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
 
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-    inputs:
-      skip_typecheck:
-        description: Skip TypeScript check (emergency deploy)
-        type: boolean
-        default: false
+#     steps:
+#       # ---------------- Checkout ----------------
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false   # queue, never interrupt a running deploy
+#       # ---------------- AWS Auth ----------------
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ secrets.AWS_REGION }}
 
-env:
-  AWS_REGION:      us-east-1
-  REPO_SERVER:     addflow-server
-  REPO_CLIENT:     addflow-client
+#       # ---------------- Login to ECR ----------------
+#       - name: Login to Amazon ECR
+#         uses: aws-actions/amazon-ecr-login@v2
 
-jobs:
-  # ── 1. TypeScript check ─────────────────────────────────────────────────────
-  typecheck:
-    name: TypeScript Check
-    runs-on: ubuntu-latest
-    if: ${{ !inputs.skip_typecheck }}
-    steps:
-      - uses: actions/checkout@v4
+#       # ---------------- Backend Build ----------------
+#       - name: Build backend Docker image
+#         run: |
+#           docker build -t ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} ./server
+#           docker tag ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} \
+#             ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+#       # ---------------- Push to ECR ----------------
+#       - name: Push backend image to ECR
+#         run: |
+#           docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - name: Install client dependencies
-        run: bun install --frozen-lockfile
-        working-directory: client
+#       # ---------------- Deploy ECS ----------------
+#       - name: Deploy to ECS
+#         run: |
+#           aws ecs update-service \
+#             --cluster ${{ secrets.ECS_CLUSTER }} \
+#             --service ${{ secrets.ECS_SERVICE }} \
+#             --force-new-deployment
 
-      - name: Check types
-        run: bun run tsc --noEmit
-        working-directory: client
+#       # ---------------- Setup Node ----------------
+#       - name: Setup Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
 
-  # ── 2. Build & push server ──────────────────────────────────────────────────
-  build-server:
-    name: Server — Build & Push
-    runs-on: ubuntu-latest
-    needs: typecheck
-    if: always() && (needs.typecheck.result == 'success' || needs.typecheck.result == 'skipped')
-    outputs:
-      image: ${{ steps.push.outputs.image }}
+#       # ---------------- Frontend Build ----------------
+#       - name: Install frontend dependencies
+#         working-directory: ./client
+#         run: |
+#           npm install -g pnpm
+#           pnpm install --frozen-lockfile
 
-    steps:
-      - uses: actions/checkout@v4
+#       - name: Build frontend
+#         working-directory: ./client
+#         run: pnpm run build
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      # Create repo silently if it doesn't exist yet
-      - name: Ensure ECR repository exists
-        run: |
-          aws ecr describe-repositories --repository-names "$REPO_SERVER" \
-            --region "$AWS_REGION" > /dev/null 2>&1 || \
-          aws ecr create-repository --repository-name "$REPO_SERVER" \
-            --region "$AWS_REGION" \
-            --image-scanning-configuration scanOnPush=true > /dev/null
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push
-        id: push
-        env:
-          REGISTRY: ${{ steps.ecr.outputs.registry }}
-          SHA:      ${{ github.sha }}
-        run: |
-          IMAGE="${REGISTRY}/${REPO_SERVER}:${SHA}"
-          docker buildx build \
-            --platform linux/amd64 \
-            --provenance=false \
-            --cache-from "type=registry,ref=${REGISTRY}/${REPO_SERVER}:cache" \
-            --cache-to   "type=registry,ref=${REGISTRY}/${REPO_SERVER}:cache,mode=max" \
-            --tag  "${IMAGE}" \
-            --tag  "${REGISTRY}/${REPO_SERVER}:latest" \
-            --push \
-            ./server
-          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
-
-  # ── 3. Build & push client ──────────────────────────────────────────────────
-  build-client:
-    name: Client — Build & Push
-    runs-on: ubuntu-latest
-    needs: typecheck
-    if: always() && (needs.typecheck.result == 'success' || needs.typecheck.result == 'skipped')
-    outputs:
-      image: ${{ steps.push.outputs.image }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Ensure ECR repository exists
-        run: |
-          aws ecr describe-repositories --repository-names "$REPO_CLIENT" \
-            --region "$AWS_REGION" > /dev/null 2>&1 || \
-          aws ecr create-repository --repository-name "$REPO_CLIENT" \
-            --region "$AWS_REGION" \
-            --image-scanning-configuration scanOnPush=true > /dev/null
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push
-        id: push
-        env:
-          REGISTRY: ${{ steps.ecr.outputs.registry }}
-          SHA:      ${{ github.sha }}
-          API_URL:  ${{ secrets.VITE_API_URL }}
-        run: |
-          IMAGE="${REGISTRY}/${REPO_CLIENT}:${SHA}"
-          docker buildx build \
-            --platform linux/amd64 \
-            --provenance=false \
-            --build-arg "VITE_API_URL=${API_URL}" \
-            --cache-from "type=registry,ref=${REGISTRY}/${REPO_CLIENT}:cache" \
-            --cache-to   "type=registry,ref=${REGISTRY}/${REPO_CLIENT}:cache,mode=max" \
-            --tag  "${IMAGE}" \
-            --tag  "${REGISTRY}/${REPO_CLIENT}:latest" \
-            --push \
-            ./client
-          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
-
-  # ── 4. Deploy to ECS (skipped until ECS_CLUSTER secret is set) ─────────────
-  deploy:
-    name: Deploy to ECS Fargate
-    runs-on: ubuntu-latest
-    needs: [build-server, build-client]
-    if: ${{ secrets.ECS_CLUSTER != '' }}
-    environment: production
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
-
-      # ── Server ──────────────────────────────────────────────────────────────
-      - name: Download server task definition
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition "${{ secrets.ECS_TASK_DEF_SERVER }}" \
-            --query taskDefinition > server-task-def.json
-
-      - name: Render server task definition
-        id: render-server
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: server-task-def.json
-          container-name:  ${{ secrets.ECS_CONTAINER_SERVER }}
-          image:           ${{ needs.build-server.outputs.image }}
-
-      - name: Deploy server
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition:            ${{ steps.render-server.outputs.task-definition }}
-          service:                    ${{ secrets.ECS_SERVICE_SERVER }}
-          cluster:                    ${{ secrets.ECS_CLUSTER }}
-          wait-for-service-stability: true
-          wait-for-minutes:           10
-
-      # ── Client (after server is stable) ─────────────────────────────────────
-      - name: Download client task definition
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition "${{ secrets.ECS_TASK_DEF_CLIENT }}" \
-            --query taskDefinition > client-task-def.json
-
-      - name: Render client task definition
-        id: render-client
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: client-task-def.json
-          container-name:  ${{ secrets.ECS_CONTAINER_CLIENT }}
-          image:           ${{ needs.build-client.outputs.image }}
-
-      - name: Deploy client
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition:            ${{ steps.render-client.outputs.task-definition }}
-          service:                    ${{ secrets.ECS_SERVICE_CLIENT }}
-          cluster:                    ${{ secrets.ECS_CLUSTER }}
-          wait-for-service-stability: true
-          wait-for-minutes:           10
-
-      - name: Deployment summary
-        run: |
-          echo "## Deployed :rocket:" >> "$GITHUB_STEP_SUMMARY"
-          echo "| | Image |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|--|--|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Server | \`${{ needs.build-server.outputs.image }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Client | \`${{ needs.build-client.outputs.image }}\` |" >> "$GITHUB_STEP_SUMMARY"
+#       # ---------------- Deploy to S3 ----------------
+#       - name: Upload frontend to S3
+#         run: |
+#           aws s3 sync ./client/dist s3://${{ secrets.S3_BUCKET }} --delete

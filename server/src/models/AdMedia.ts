@@ -2,7 +2,7 @@ import mongoose, { Schema, type Document } from 'mongoose'
 
 export interface IAdMedia extends Document {
   ad_id: mongoose.Types.ObjectId
-  source_type: 's3' | 'youtube' | 'external'
+  source_type: 's3' | 'youtube' | 'external' | 'local'
   original_url: string
   thumbnail_url?: string
   s3_key?: string
@@ -13,8 +13,8 @@ export interface IAdMedia extends Document {
 
 const adMediaSchema = new Schema<IAdMedia>(
   {
-    ad_id: { type: Schema.Types.ObjectId, ref: 'Ad', required: true },
-    source_type: { type: String, enum: ['s3', 'youtube', 'external'], required: true },
+    ad_id: { type: Schema.Types.ObjectId, ref: 'Ad' },
+    source_type: { type: String, enum: ['s3', 'youtube', 'external', 'local'], required: true },
     original_url: { type: String, required: true },
     thumbnail_url: { type: String },
     s3_key: { type: String },
