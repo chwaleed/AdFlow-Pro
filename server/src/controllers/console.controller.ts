@@ -213,7 +213,7 @@ export async function updateCategory(req: AuthRequest, res: Response, next: Next
     if (sort_order !== undefined) category.sort_order = sort_order
 
     if (slugInput || name) {
-      category.slug = await uniqueSlug(slugInput || name || category.name, Category, id)
+      category.slug = await uniqueSlug(slugInput || name || category.name, Category, String(id))
     }
 
     await category.save()
@@ -300,7 +300,7 @@ export async function updateCity(req: AuthRequest, res: Response, next: NextFunc
     if (name) city.name = name
     if (sort_order !== undefined) city.sort_order = sort_order
     if (slugInput || name) {
-      city.slug = await uniqueSlug(slugInput || name || city.name, City, id)
+      city.slug = await uniqueSlug(slugInput || name || city.name, City, String(id))
     }
 
     await city.save()

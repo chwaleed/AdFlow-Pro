@@ -24,7 +24,7 @@ export async function triggerJob(req: Request, res: Response, next: NextFunction
       return
     }
 
-    const { job } = req.params
+    const job = String(req.params.job)
     const fn = JOBS[job]
     if (!fn) {
       res.status(404).json({ ok: false, error: `Unknown job: ${job}. Valid: ${Object.keys(JOBS).join(', ')}` })

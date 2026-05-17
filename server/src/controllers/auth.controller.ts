@@ -7,8 +7,10 @@ import type { AuthRequest } from '../middleware/auth.js'
 
 function signTokens(userId: string) {
   return {
-    accessToken: jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: env.JWT_ACCESS_EXPIRES as string }),
-    refreshToken: jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRES as string }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    accessToken: jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: env.JWT_ACCESS_EXPIRES as any }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    refreshToken: jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRES as any }),
   }
 }
 

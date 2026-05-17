@@ -11,7 +11,7 @@ export async function createAd(req: AuthRequest, res: Response, next: NextFuncti
   try {
     const parsed = createAdSchema.safeParse(req.body)
     if (!parsed.success) {
-      res.status(400).json({ ok: false, error: parsed.error.errors[0]?.message })
+      res.status(400).json({ ok: false, error: parsed.error.issues[0]?.message })
       return
     }
 
@@ -40,7 +40,7 @@ export async function updateAd(req: AuthRequest, res: Response, next: NextFuncti
     if (ad.status !== 'draft') { res.status(400).json({ ok: false, error: 'Only draft ads can be edited' }); return }
 
     const parsed = updateAdSchema.safeParse(req.body)
-    if (!parsed.success) { res.status(400).json({ ok: false, error: parsed.error.errors[0]?.message }); return }
+    if (!parsed.success) { res.status(400).json({ ok: false, error: parsed.error.issues[0]?.message }); return }
 
     if (parsed.data.title && parsed.data.title !== ad.title) {
       parsed.data.title && Object.assign(parsed.data, { slug: await generateSlug(parsed.data.title) })
@@ -72,8 +72,8 @@ export async function submitAd(req: AuthRequest, res: Response, next: NextFuncti
     ad.status = 'submitted'
     await ad.save()
 
-    await logStatusChange({ ad_id: id, previous_status: previousStatus, new_status: 'submitted', changed_by: req.user!._id, note: 'Client submitted ad' })
-    await logAudit({ actor_id: req.user!._id, action_type: 'ad_submitted', target_type: 'Ad', target_id: id, old_value: previousStatus, new_value: 'submitted' })
+    await logStatusChange({ ad_id: String(id), previous_status: previousStatus, new_status: 'submitted', changed_by: String(req.user!._id), note: 'Client submitted ad' })
+    await logAudit({ actor_id: String(req.user!._id), action_type: 'ad_submitted', target_type: 'Ad', target_id: String(id), old_value: previousStatus, new_value: 'submitted' })
 
     res.json({ ok: true, data: { ad } })
   } catch (err) { next(err) }
@@ -133,7 +133,7 @@ export async function deleteAd(req: AuthRequest, res: Response, next: NextFuncti
     ad.status = 'archived'
     await ad.save()
 
-    await logAudit({ actor_id: req.user!._id, action_type: 'ad_archived', target_type: 'Ad', target_id: id })
+    await logAudit({ actor_id: String(req.user!._id), action_type: 'ad_archived', target_type: 'Ad', target_id: String(id) })
 
     res.json({ ok: true })
   } catch (err) { next(err) }

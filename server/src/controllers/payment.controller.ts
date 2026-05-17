@@ -10,7 +10,7 @@ export async function submitPayment(req: AuthRequest, res: Response, next: NextF
   try {
     const parsed = submitPaymentSchema.safeParse(req.body)
     if (!parsed.success) {
-      res.status(400).json({ ok: false, error: parsed.error.errors[0]?.message })
+      res.status(400).json({ ok: false, error: parsed.error.issues[0]?.message })
       return
     }
 

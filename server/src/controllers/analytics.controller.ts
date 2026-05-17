@@ -131,10 +131,11 @@ export async function getRevenueCSV(req: Request, res: Response, next: NextFunct
 
     const header = 'Date,Client,Email,Ad Title,Package,Amount,Method,Transaction Ref\n'
     const rows = payments.map(p => {
-      const user = p.user_id as { name: string; email: string } | null
-      const ad = p.ad_id as { title: string; package_id: { name: string } | null } | null
+      const user = p.user_id as unknown as { name: string; email: string } | null
+      const ad = p.ad_id as unknown as { title: string; package_id: { name: string } | null } | null
+      const pAny = p as unknown as { createdAt: Date }
       return [
-        new Date(p.createdAt as Date).toISOString().split('T')[0],
+        new Date(pAny.createdAt).toISOString().split('T')[0],
         user?.name ?? '',
         user?.email ?? '',
         ad?.title ?? '',

@@ -38,10 +38,11 @@ userSchema.statics.hashPassword = (password: string) => bcrypt.hash(password, 12
 
 userSchema.set('toJSON', {
   transform: (_doc, ret) => {
-    delete ret.password_hash
-    delete ret.refresh_token
-    delete ret.__v
-    return ret
+    const r = ret as unknown as Record<string, unknown>
+    delete r.password_hash
+    delete r.refresh_token
+    delete r.__v
+    return r
   },
 })
 

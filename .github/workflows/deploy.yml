@@ -54,13 +54,11 @@ jobs:
       # ---------------- Frontend Build ----------------
       - name: Install frontend dependencies
         working-directory: ./client
-        run: |
-          npm install -g pnpm
-          pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Build frontend
         working-directory: ./client
-        run: pnpm run build
+        run: npm run build
 
       # ---------------- Deploy to S3 ----------------
       - name: Upload frontend to S3

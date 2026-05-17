@@ -28,7 +28,8 @@ const screenshotFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
 
 function wrap(middleware: RequestHandler): RequestHandler {
   return (req, res, next) => {
-    (middleware as (req: typeof req, res: typeof res, cb: (err?: unknown) => void) => void)(req, res, (err?: unknown) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (middleware as any)(req, res, (err?: unknown) => {
       if (!err) return next()
       const msg = err instanceof multer.MulterError ? err.message
         : err instanceof Error ? err.message

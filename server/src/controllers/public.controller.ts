@@ -14,7 +14,7 @@ import type { IPackage } from '../models/Package.js'
 import type { AuthRequest } from '../middleware/auth.js'
 
 const PUBLISHED_FILTER = {
-  status: 'published',
+  status: 'published' as const,
   publish_at: { $lte: new Date() },
   expire_at: { $gt: new Date() },
 }
@@ -160,7 +160,7 @@ export async function getCityListing(req: Request, res: Response, next: NextFunc
 export async function getLandingData(_req: Request, res: Response, next: NextFunction) {
   try {
     const now = new Date()
-    const publishedFilter = { status: 'published', publish_at: { $lte: now }, expire_at: { $gt: now } }
+    const publishedFilter = { status: 'published' as const, publish_at: { $lte: now }, expire_at: { $gt: now } }
 
     const [featuredAds, recentAds, categories, packages, question] = await Promise.all([
       Ad.find({ ...publishedFilter, is_featured: true })

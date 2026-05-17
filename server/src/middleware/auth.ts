@@ -21,7 +21,7 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     if (!user) { res.status(401).json({ ok: false, error: 'User not found' }); return }
     if (user.status === 'suspended') { res.status(403).json({ ok: false, error: 'Account suspended' }); return }
 
-    req.user = user as AuthRequest['user']
+    req.user = user as unknown as AuthRequest['user']
     next()
   } catch {
     res.status(401).json({ ok: false, error: 'Invalid or expired token' })

@@ -1,25 +1,22 @@
-# 1. Install deps
-FROM node:26-alpine AS deps 
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
-RUN corepack enable
+COPY package.json package-lock.json ./
+RUN npm install
 
-COPY package.json pnpm-lock.yaml ./
 
-RUN pnpm install --frozen-lockfile
-
-# 2. Build stage
-FROM node:26-alpine AS builder 
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm run build
 
-# 3. Final runtime image
-FROM node:26-alpine AS runner
+RUN npm run build
+
+
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
