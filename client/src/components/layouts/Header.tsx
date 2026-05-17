@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, Megaphone, Sun, Moon, ChevronDown, LogOut, LayoutDashboard, UserCircle } from 'lucide-react'
+import { Menu, Megaphone, Sun, Moon, ChevronDown, LogOut, LayoutDashboard, UserCircle, BarChart2, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -97,6 +97,23 @@ function UserMenu() {
             Profile
           </Link>
         </DropdownMenuItem>
+        {(user.role === 'admin' || user.role === 'super_admin') && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/admin/analytics" className="cursor-pointer">
+                <BarChart2 className="mr-2 h-4 w-4" />
+                Analytics
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/admin/health" className="cursor-pointer">
+                <Activity className="mr-2 h-4 w-4" />
+                Health &amp; Audit
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}

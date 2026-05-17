@@ -1,13 +1,15 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Car, Building2, Cpu, Home, Briefcase, Wrench, ShoppingBag, Zap,
   Shield, CheckCircle, Clock, Star, ArrowRight, ChevronRight,
-  Search, TrendingUp, BadgeCheck,
+  Search, TrendingUp, BadgeCheck, Tag, MapPin,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import api from '@/lib/api'
 
 // ── Categories ────────────────────────────────────────────────────────────────
 
@@ -179,9 +181,108 @@ function CategoriesSection() {
   )
 }
 
-// ── Section: Featured Ads (placeholder) ──────────────────────────────────────
+// ── Shared Ad card ────────────────────────────────────────────────────────────
 
-function FeaturedAdsSection() {
+interface LandingAd {
+  _id: string
+  title: string
+  slug: string
+  price?: number
+  is_featured: boolean
+  category_id?: { name: string; slug: string }
+  city_id?: { name: string; slug: string }
+  primary_media?: { original_url: string; thumbnail_url?: string }
+}
+
+function formatPrice(n?: number) {
+  if (!n) return null
+  return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(n)
+}
+
+function LandingAdCard({ ad }: { ad: LandingAd }) {
+  const thumb = ad.primary_media?.thumbnail_url || ad.primary_media?.original_url
+  return (
+    <Link to={`/ads/${ad.slug}`} className="group block">
+      <Card className="overflow-hidden h-full transition-shadow hover:shadow-md">
+        <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+          {thumb ? (
+            <img src={thumb} alt={ad.title}
+              className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <Tag className="h-8 w-8 text-muted-foreground/30" strokeWidth={1} />
+            </div>
+          )}
+          {ad.is_featured && (
+            <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-xs px-1.5 py-0">
+              <BadgeCheck className="h-3 w-3 mr-0.5" strokeWidth={1.5} />Featured
+            </Badge>
+          )}
+        </div>
+        <CardContent className="p-3.5">
+          <p className="font-heading text-sm font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
+            {ad.title}
+          </p>
+          {ad.price && <p className="mt-1 font-heading text-base font-bold text-accent">{formatPrice(ad.price)}</p>}
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+            {ad.city_id && (
+              <span className="flex items-center gap-0.5">
+                <MapPin className="h-3 w-3" strokeWidth={1.5} />{ad.city_id.name}
+              </span>
+            )}
+            {ad.category_id && (
+              <span className="flex items-center gap-0.5">
+                <Tag className="h-3 w-3" strokeWidth={1.5} />{ad.category_id.name}
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
+
+function AdCardSkeleton() {
+  return (
+    <Card className="overflow-hidden">
+      <Skeleton className="aspect-[4/3] w-full rounded-none" />
+      <CardContent className="p-3.5 space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-5 w-1/3" />
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Landing data hook ─────────────────────────────────────────────────────────
+
+interface LandingData {
+  featured_ads: LandingAd[]
+  recent_ads: LandingAd[]
+  categories: { _id: string; name: string; slug: string; is_active: boolean }[]
+  packages: { _id: string; name: string; label: string; price: number; duration_days: number; is_featured: boolean; benefits: string[] }[]
+  question?: { question: string; answer: string }
+}
+
+function useLandingData() {
+  const [data, setData] = useState<LandingData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get<{ ok: boolean; data: LandingData }>('/landing')
+      .then((res) => setData(res.data.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  return { data, loading }
+}
+
+// ── Section: Featured Ads ─────────────────────────────────────────────────────
+
+function FeaturedAdsSection({ ads, loading }: { ads: LandingAd[]; loading: boolean }) {
   return (
     <section className="bg-muted/40 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -192,20 +293,28 @@ function FeaturedAdsSection() {
               Featured Listings
             </h2>
           </div>
-          <Badge variant="secondary" className="text-xs">Coming in Phase 2</Badge>
+          <Link to="/ads?sort=rank"
+            className="hidden items-center gap-1 text-sm font-medium text-accent hover:underline sm:flex">
+            View all <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="overflow-hidden">
-              <Skeleton className="h-44 w-full rounded-none" />
-              <CardContent className="p-4 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-                <Skeleton className="h-5 w-1/3" />
-              </CardContent>
-            </Card>
-          ))}
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => <AdCardSkeleton key={i} />)
+            : ads.length > 0
+            ? ads.slice(0, 4).map((ad) => <LandingAdCard key={ad._id} ad={ad} />)
+            : Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="overflow-hidden">
+                  <Skeleton className="h-44 w-full rounded-none" />
+                  <CardContent className="p-4 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-5 w-1/3" />
+                  </CardContent>
+                </Card>
+              ))
+          }
         </div>
       </div>
     </section>
@@ -318,9 +427,9 @@ function PackagesSection() {
   )
 }
 
-// ── Section: Recent Ads (placeholder) ────────────────────────────────────────
+// ── Section: Recent Ads ───────────────────────────────────────────────────────
 
-function RecentAdsSection() {
+function RecentAdsSection({ ads, loading }: { ads: LandingAd[]; loading: boolean }) {
   return (
     <section className="py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -331,23 +440,27 @@ function RecentAdsSection() {
               Recent Listings
             </h2>
           </div>
-          <Badge variant="secondary" className="text-xs">Coming in Phase 2</Badge>
+          <Link to="/ads"
+            className="hidden items-center gap-1 text-sm font-medium text-accent hover:underline sm:flex">
+            View all <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Card key={i} className="overflow-hidden">
-              <Skeleton className="h-36 w-full rounded-none" />
-              <CardContent className="p-3 space-y-2">
-                <Skeleton className="h-3.5 w-full" />
-                <Skeleton className="h-3 w-2/3" />
-                <div className="flex justify-between">
-                  <Skeleton className="h-4 w-1/3" />
-                  <Skeleton className="h-4 w-1/4" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {loading
+            ? Array.from({ length: 8 }).map((_, i) => <AdCardSkeleton key={i} />)
+            : ads.length > 0
+            ? ads.slice(0, 8).map((ad) => <LandingAdCard key={ad._id} ad={ad} />)
+            : Array.from({ length: 8 }).map((_, i) => (
+                <Card key={i} className="overflow-hidden">
+                  <Skeleton className="h-36 w-full rounded-none" />
+                  <CardContent className="p-3 space-y-2">
+                    <Skeleton className="h-3.5 w-full" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </CardContent>
+                </Card>
+              ))
+          }
         </div>
 
         <div className="mt-8 text-center">
@@ -429,14 +542,15 @@ function CTASection() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const { data, loading } = useLandingData()
   return (
     <>
       <HeroSection />
       <CategoriesSection />
-      <FeaturedAdsSection />
+      <FeaturedAdsSection ads={data?.featured_ads ?? []} loading={loading} />
       <HowItWorksSection />
       <PackagesSection />
-      <RecentAdsSection />
+      <RecentAdsSection ads={data?.recent_ads ?? []} loading={loading} />
       <TrustSection />
       <CTASection />
     </>

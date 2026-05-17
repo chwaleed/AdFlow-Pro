@@ -19,6 +19,10 @@ import {
   listCategoriesAdmin, createCategory, updateCategory, toggleCategory,
   listCitiesAdmin, createCity, updateCity, toggleCity,
 } from '../controllers/console.controller.js'
+import {
+  getAnalyticsSummary, getRevenueCSV,
+  getDbHealth, getAuditLogs, getStatusHistory, getHealthLogs,
+} from '../controllers/analytics.controller.js'
 
 const router = Router()
 
@@ -58,5 +62,14 @@ router.get('/console/cities', listCitiesAdmin)
 router.post('/console/cities', validate(createCitySchema), createCity)
 router.patch('/console/cities/:id/toggle', toggleCity)
 router.patch('/console/cities/:id', validate(updateCitySchema), updateCity)
+
+// Milestone 4.5 — Analytics
+router.get('/analytics/summary', getAnalyticsSummary)
+router.get('/analytics/revenue.csv', getRevenueCSV)
+
+// Milestone 4.6 — Health & Audit
+router.get('/health-logs', getHealthLogs)
+router.get('/audit-logs', getAuditLogs)
+router.get('/status-history', getStatusHistory)
 
 export default router

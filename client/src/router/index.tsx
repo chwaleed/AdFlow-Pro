@@ -32,6 +32,12 @@ const router = createBrowserRouter([
       { path: 'privacy',      lazy: () => lazy(() => import('@/pages/static/PrivacyPage')) },
       { path: 'usage-policy', lazy: () => lazy(() => import('@/pages/static/UsagePolicyPage')) },
 
+      // Public browsing
+      { path: 'ads',               lazy: () => lazy(() => import('@/pages/ExplorePage')) },
+      { path: 'ads/:slug',         lazy: () => lazy(() => import('@/pages/AdDetailPage')) },
+      { path: 'categories/:slug',  lazy: () => lazy(() => import('@/pages/CategoryPage')) },
+      { path: 'cities/:slug',      lazy: () => lazy(() => import('@/pages/CityPage')) },
+
       // Client + all authenticated roles
       {
         element: <ProtectedRoute />,
@@ -39,6 +45,7 @@ const router = createBrowserRouter([
           { path: 'dashboard',       lazy: () => lazy(() => import('@/pages/client/DashboardPage')) },
           { path: 'ads/new',         lazy: () => lazy(() => import('@/pages/client/CreateAdPage')) },
           { path: 'ads/:id/edit',    lazy: () => lazy(() => import('@/pages/client/CreateAdPage')) },
+          { path: 'ads/:id/pay',     lazy: () => lazy(() => import('@/pages/client/PaymentPage')) },
           { path: 'profile',         lazy: () => lazy(() => import('@/pages/client/ProfilePage')) },
         ],
       },
@@ -55,7 +62,9 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute roles={['admin', 'super_admin']} />,
         children: [
-          { path: 'admin', lazy: () => lazy(() => import('@/pages/admin/AdminDashboardPage')) },
+          { path: 'admin',            lazy: () => lazy(() => import('@/pages/admin/AdminDashboardPage')) },
+          { path: 'admin/analytics',  lazy: () => lazy(() => import('@/pages/admin/AnalyticsPage')) },
+          { path: 'admin/health',     lazy: () => lazy(() => import('@/pages/admin/HealthAuditPage')) },
         ],
       },
 

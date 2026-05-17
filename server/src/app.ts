@@ -16,6 +16,8 @@ import taxonomyRoutes from './routes/taxonomy.routes.js'
 import clientAdsRoutes from './routes/client-ads.routes.js'
 import paymentRoutes from './routes/payment.routes.js'
 import publicRoutes from './routes/public.routes.js'
+import cronRoutes from './routes/cron.routes.js'
+import { getDbHealth } from './controllers/analytics.controller.js'
 
 const app = express()
 
@@ -37,6 +39,7 @@ const authLimiter = rateLimit({
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, data: { status: 'ok', env: env.NODE_ENV } })
 })
+app.get('/api/health/db', getDbHealth)
 
 app.use('/api/auth', authLimiter, authRoutes)
 app.use('/api/media', mediaRoutes)
@@ -44,6 +47,7 @@ app.use('/api', taxonomyRoutes)
 app.use('/api', publicRoutes)
 app.use('/api/client/ads', clientAdsRoutes)
 app.use('/api/client/payments', paymentRoutes)
+app.use('/api/cron', cronRoutes)
 app.use('/api/moderator', moderatorRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/notifications', notificationRoutes)

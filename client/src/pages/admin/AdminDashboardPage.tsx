@@ -3,13 +3,12 @@ import {
   Wallet, CheckCircle2, XCircle, CalendarClock, Zap,
   AlertTriangle, User, Tag, MapPin, Package, Star,
   Clock, ImageOff, ExternalLink, ChevronUp, ChevronDown,
-  ArrowUpDown, Users, Settings, FolderOpen, Building2,
+  ArrowUpDown, Users, FolderOpen, Building2,
   Plus, Pencil, ToggleLeft, ToggleRight, Ban, ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
@@ -949,7 +948,7 @@ function UserEditSheet({
           {isSuperAdmin && (
             <div>
               <Label className="text-sm font-medium text-foreground mb-1.5 block">Role</Label>
-              <Select value={role} onValueChange={setRole}>
+              <Select value={role} onValueChange={(v) => setRole(v ?? '')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1017,7 +1016,7 @@ function UsersTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1) }}>
+        <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v ?? 'all'); setPage(1) }}>
           <SelectTrigger className="w-40 h-8 text-xs">
             <SelectValue placeholder="All roles" />
           </SelectTrigger>
@@ -1028,7 +1027,7 @@ function UsersTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v ?? 'all'); setPage(1) }}>
           <SelectTrigger className="w-36 h-8 text-xs">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
@@ -1149,7 +1148,7 @@ function PackageSheet({
   useEffect(() => {
     if (open && item) {
       const { _id: _i, is_active: _a, benefits, ...rest } = item
-      setForm({ ...rest })
+      setForm({ ...BLANK_PKG, ...rest })
       setBenefitsText(benefits.join('\n'))
     } else if (open) {
       setForm({ ...BLANK_PKG })

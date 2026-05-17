@@ -25,7 +25,17 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok'], '| total:', d['data']['total'], '| has_media:', d['data']['ads'][0].get\\('primary_media'\\) is not None if d['data']['ads'] else 'n/a'\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok'], '| title:', d['data']['ad']['title'][:40], '| views:', d['data']['ad']['view_count'], '| media_count:', len\\(d['data']['media']\\)\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok']\\)\")",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok'], '| featured:', len\\(d['data']['featured_ads']\\), '| recent:', len\\(d['data']['recent_ads']\\), '| packages:', len\\(d['data']['packages']\\), '| question:', bool\\(d['data']['question']\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok'], '| featured:', len\\(d['data']['featured_ads']\\), '| recent:', len\\(d['data']['recent_ads']\\), '| packages:', len\\(d['data']['packages']\\), '| question:', bool\\(d['data']['question']\\)\\)\")",
+      "Bash(pnpm install *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok'], '| result:', d['data']['result']\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok'], '| expired:', d['data']['result']\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok'], '| updated:', d['data']['result']\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok'], '| count:', len\\(d['data']['logs']\\)\\)\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\AddFlow\\\\client\\\\src\" -Recurse -Name)",
+      "Bash(Sort-Object)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm build *)"
     ]
   }
 }
