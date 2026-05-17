@@ -1,67 +1,67 @@
-# name: Deploy MERN App
-# on:
-#   push:
-#     branches: ["main"]
+name: Deploy MERN App
+on:
+  push:
+    branches: ["main"]
 
-# jobs:
-#   build-and-deploy:
-#     runs-on: ubuntu-latest
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
 
-#     steps:
-#       # ---------------- Checkout ----------------
-#       - name: Checkout code
-#         uses: actions/checkout@v4
+    steps:
+      # ---------------- Checkout ----------------
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#       # ---------------- AWS Auth ----------------
-#       - name: Configure AWS credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           aws-region: ${{ secrets.AWS_REGION }}
+      # ---------------- AWS Auth ----------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-#       # ---------------- Login to ECR ----------------
-#       - name: Login to Amazon ECR
-#         uses: aws-actions/amazon-ecr-login@v2
+      # ---------------- Login to ECR ----------------
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-#       # ---------------- Backend Build ----------------
-#       - name: Build backend Docker image
-#         run: |
-#           docker build -t ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} ./server
-#           docker tag ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} \
-#             ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+      # ---------------- Backend Build ----------------
+      - name: Build backend Docker image
+        run: |
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} ./server
+          docker tag ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} \
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-#       # ---------------- Push to ECR ----------------
-#       - name: Push backend image to ECR
-#         run: |
-#           docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+      # ---------------- Push to ECR ----------------
+      - name: Push backend image to ECR
+        run: |
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-#       # ---------------- Deploy ECS ----------------
-#       - name: Deploy to ECS
-#         run: |
-#           aws ecs update-service \
-#             --cluster ${{ secrets.ECS_CLUSTER }} \
-#             --service ${{ secrets.ECS_SERVICE }} \
-#             --force-new-deployment
+      # ---------------- Deploy ECS ----------------
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --service ${{ secrets.ECS_SERVICE }} \
+            --force-new-deployment
 
-#       # ---------------- Setup Node ----------------
-#       - name: Setup Node
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 20
+      # ---------------- Setup Node ----------------
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-#       # ---------------- Frontend Build ----------------
-#       - name: Install frontend dependencies
-#         working-directory: ./client
-#         run: |
-#           npm install -g pnpm
-#           pnpm install --frozen-lockfile
+      # ---------------- Frontend Build ----------------
+      - name: Install frontend dependencies
+        working-directory: ./client
+        run: |
+          npm install -g pnpm
+          pnpm install --frozen-lockfile
 
-#       - name: Build frontend
-#         working-directory: ./client
-#         run: pnpm run build
+      - name: Build frontend
+        working-directory: ./client
+        run: pnpm run build
 
-#       # ---------------- Deploy to S3 ----------------
-#       - name: Upload frontend to S3
-#         run: |
-#           aws s3 sync ./client/dist s3://${{ secrets.S3_BUCKET }} --delete
+      # ---------------- Deploy to S3 ----------------
+      - name: Upload frontend to S3
+        run: |
+          aws s3 sync ./client/dist s3://${{ secrets.S3_BUCKET }} --delete
